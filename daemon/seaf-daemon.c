@@ -45,6 +45,7 @@
 #endif
 
 #include "cdc/cdc.h"
+#include "seafile_service_main.h"
 
 #ifndef SEAFILE_CLIENT_VERSION
 #define SEAFILE_CLIENT_VERSION PACKAGE_VERSION
@@ -588,6 +589,8 @@ main (int argc, char **argv)
 
 
     seafile_session_config_set_string (seaf, "wktree", seaf->worktree_dir);
+
+    g_thread_new("thrift-server", start_thrift_server, NULL);
 
     event_base_loop (seaf->ev_base, 0);
 

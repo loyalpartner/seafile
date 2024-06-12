@@ -95,11 +95,6 @@ from urllib.parse import urlparse
 
 from os.path import abspath, dirname, exists, isdir, join
 
-
-sys.path.append('gen-py')
-from genpy.seafile import Seafile
-from genpy.seafile.ttypes import *
-
 import seafile
 
 if 'HOME' in os.environ:
@@ -133,36 +128,8 @@ def _check_seafile():
             print("%s not found in PATH. Have you installed seafile?" % prog)
             sys.exit(1)
 
-def _check_daemon_running():
-    import fcntl
-    pidfile = os.path.join(seafile_datadir, 'seaf-daemon.pid')
-    with open(pidfile, 'w') as f:
-        try:
-            fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            fcntl.flock(f, fcntl.LOCK_UN)
-        except:
-            print("The seafile data directory %s is already used by another Seafile client instance. Please use another seafile data directory."%seafile_datadir)
-            sys.exit(1)
-
 def get_rpc_client(confdir):
     return seafile.RpcClient(join(seafile_datadir, 'seafile.sock'))
-
-def get_thrift_rpc_client():
-    # sys.path.insert(0, glob.glob('./gen-pyjj')[0])
-    from thrift import Thrift
-    from thrift.transport import TSocket
-    from thrift.transport import TTransport
-    from thrift.protocol import TBinaryProtocol
-
-    # Make socket
-    transport = TSocket.TSocket('localhost', 9090)
-    transport = TTransport.TBufferedTransport(transport)
-    protocol = TBinaryProtocol.TBinaryProtocol(transport)
-
-    transport.open()
-
-    return Seafile.Client(protocol)
-
 
 def _config_valid(conf):
     ''' Check config directory valid '''
@@ -272,7 +239,6 @@ def urlopen(url, data=None, headers=None):
     print("url: %s" % url)
     import re
     import urllib3
-    urllib3.disable_warnings()
     from urllib3.util.url import parse_url
     from urllib3.request import urlencode
 
@@ -391,38 +357,6 @@ def get_repo_download_info(url, token):
     repo_info = urlopen(url, headers=headers)
     return json.loads(repo_info.decode('utf8'))
 
-def get_value_from_user_config(args, section, key):
-    user_config = args.C
-    if not user_config:
-        user_config = DEFAULT_USER_CONF_DIR
-    else:
-        user_config = abspath(user_config)
-    if _user_config_valid(user_config):
-        try:
-            from configparser import ConfigParser
-            from configparser import NoOptionError
-        except ImportError:
-            from ConfigParser import ConfigParser
-            from ConfigParser import NoOptionError
-
-        cfg = ConfigParser()
-        cfg.read(user_config)
-        if len(cfg.sections()) < 1 or cfg.sections()[0] != 'account':
-            return None
-        try:
-            token = cfg.get(section, key)
-            return token
-        except NoOptionError:
-            return None
-    else:
-        return None
-
-def get_token_from_args_or_config(args):
-    if args.token:
-        return args.token
-    else:
-        return get_value_from_user_config(args, 'account', 'token')
-
 def seaf_init(args):
     ''' Initialize config directories'''
 
@@ -465,8 +399,6 @@ def seaf_start_seafile(args):
     ''' start seafile daemon '''
 
     conf_dir = _conf_dir(args)
-
-    _check_daemon_running()
 
     print("Starting seafile daemon ...")
 
@@ -518,8 +450,14 @@ def seaf_list_remote(args):
 
     conf_dir = _conf_dir(args)
 
-    server_from_config = get_value_from_user_config(args, 'account', 'server')
-    user_from_config = get_value_from_user_config(args, 'account', 'user')
+    server_from_config, user_from_config = None, None
+    user_config_dir = args.C
+    if not user_config_dir:
+        user_config_dir = DEFAULT_USER_CONF_DIR
+    else:
+        user_config_dir = abspath(user_config_dir)
+    if _user_config_valid(user_config_dir):
+        server_from_config, user_from_config = _parse_user_config(user_config_dir)    
 
     url = args.server        
     if not url and server_from_config:
@@ -536,7 +474,7 @@ def seaf_list_remote(args):
     if not username:
         username = input("Enter username: ")
 
-    token = get_token_from_args_or_config(args)
+    token = args.token
     password = None
     tfa = args.tfa
     if not token:
@@ -589,8 +527,14 @@ def seaf_download(args):
         print("Library id is required")
         sys.exit(1)
 
-    server_from_config = get_value_from_user_config(args, 'account', 'server')
-    user_from_config = get_value_from_user_config(args, 'account', 'user')
+    server_from_config, user_from_config = None, None        
+    user_config_dir = args.C
+    if not user_config_dir:
+        user_config_dir = DEFAULT_USER_CONF_DIR
+    else:
+        user_config_dir = abspath(user_config_dir)
+    if _user_config_valid(user_config_dir):
+        server_from_config, user_from_config = _parse_user_config(user_config_dir)
 
     url = args.server
     if not url and server_from_config:
@@ -604,14 +548,14 @@ def seaf_download(args):
         download_dir = abspath(args.dir)
 
 
-    seafile_rpc = get_thrift_rpc_client()
+    seafile_rpc = get_rpc_client(conf_dir)
 
     username = args.username
     if not username and user_from_config:
         username = user_from_config
     if not username:
         username = input("Enter username: ")
-    token = get_token_from_args_or_config(args)
+    token = args.token
     password = None
     tfa = args.tfa
     if not token:
@@ -656,19 +600,13 @@ def seaf_download(args):
     else:
         repo_passwd = None
 
-    request = DownloadRequest(
-            repo_id=repo,
-            repo_version=version,
-            repo_name=repo_name,
-            wt_parent=download_dir,
-            token=clone_token,
-            passwd=repo_passwd,
-            magic=magic,
-            email=email,
-            random_key=random_key,
-            enc_version=enc_version,
-            more_info=more_info)
-    seafile_rpc.download(request)
+    seafile_rpc.download(repo,
+                         version,
+                         repo_name,
+                         download_dir,
+                         clone_token,
+                         repo_passwd, magic,
+                         email, random_key, enc_version, more_info)
 
 
 def seaf_download_by_name(args):
@@ -682,8 +620,14 @@ def seaf_download_by_name(args):
         print("Library name is required")
         sys.exit(1)
 
-    server_from_config = get_value_from_user_config(args, 'account', 'server')
-    user_from_config = get_value_from_user_config(args, 'account', 'user')
+    server_from_config, user_from_config = None, None
+    user_config_dir = args.C
+    if not user_config_dir:
+        user_config_dir = DEFAULT_USER_CONF_DIR
+    else:
+        user_config_dir = abspath(user_config_dir)
+    if _user_config_valid(user_config_dir):
+        server_from_config, user_from_config = _parse_user_config(user_config_dir)        
 
     url = args.server        
     if not url and server_from_config:
@@ -701,7 +645,7 @@ def seaf_download_by_name(args):
         username = input("Enter username: ")
         args.username = username
 
-    token = get_token_from_args_or_config(args)
+    token = args.token
     password = None
     tfa = args.tfa
     if not token:
@@ -736,8 +680,14 @@ def seaf_sync(args):
         print("Library id is required")
         sys.exit(1)
 
-    server_from_config = get_value_from_user_config(args, 'account', 'server')
-    user_from_config = get_value_from_user_config(args, 'account', 'user')
+    server_from_config, user_from_config = None, None
+    user_config_dir = args.C
+    if not user_config_dir:
+        user_config_dir = DEFAULT_USER_CONF_DIR
+    else:
+        user_config_dir = abspath(user_config_dir)
+    if _user_config_valid(user_config_dir):
+        server_from_config, user_from_config = _parse_user_config(user_config_dir)
 
     url = args.server
     if not url and server_from_config:
@@ -765,7 +715,7 @@ def seaf_sync(args):
         username = input("Enter username: ")
 
     password = None
-    token = get_token_from_args_or_config(args)
+    token = args.token
     tfa = args.tfa
     if not token:
         password = args.password
@@ -946,8 +896,14 @@ def seaf_create(args):
     '''Create a library'''
     conf_dir = _conf_dir(args)
 
-    server_from_config = get_value_from_user_config(args, 'account', 'server')
-    user_from_config = get_value_from_user_config(args, 'account', 'user')
+    server_from_config, user_from_config = None, None
+    user_config_dir = args.C
+    if not user_config_dir:
+        user_config_dir = DEFAULT_USER_CONF_DIR
+    else:
+        user_config_dir = abspath(user_config_dir)
+    if _user_config_valid(user_config_dir):
+        server_from_config, user_from_config = _parse_user_config(user_config_dir)    
 
     # check username and password
     username = args.username
@@ -963,7 +919,7 @@ def seaf_create(args):
         print("Seafile server url need to be presented")
         sys.exit(1)
 
-    token = get_token_from_args_or_config(args)
+    token = args.token
     password = None
     tfa = args.tfa
     if not token:

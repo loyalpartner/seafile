@@ -1,3 +1,8 @@
+GEN_C_GLIB_FILES_HDRS = gen-c_glib/seafile_types.h gen-c_glib/seafile.h
+GEN_C_GLIB_FILES_SRCS = gen-c_glib/seafile_types.c gen-c_glib/seafile.c
+
+$(GEN_C_GLIB_FILES_HDRS) $(GEN_C_GLIB_FILES_SRCS): $(top_srcdir)/idl/seafile.thrift
+	thrift --gen c_glib -r $<
 
 AM_CFLAGS = -DPKGDATADIR=\"$(pkgdatadir)\" \
 	-DPACKAGE_DATA_DIR=\""$(pkgdatadir)"\" \
@@ -13,6 +18,8 @@ AM_CFLAGS = -DPKGDATADIR=\"$(pkgdatadir)\" \
 	@CURL_CFLAGS@ \
 	@BPWRAPPER_CFLAGS@ \
 	@GNUTLS_CFLAGS@ \
+	@THRIFT_CFLAGS@ \
+	@THRIFT_C_GLIB_CFLAGS@ \
 	-Wall
 
 if MACOS
@@ -40,7 +47,9 @@ noinst_HEADERS = \
 	set-perm.h \
 	change-set.h \
 	seafile-error-impl.h \
-	notif-mgr.h
+	notif-mgr.h \
+	seafile_service_main.h \
+	$(GEN_C_GLIB_FILES_HDRS)
 
 if LINUX
 wt_monitor_src = wt-monitor.c wt-monitor-linux.c wt-monitor-structs.c
@@ -87,10 +96,12 @@ common_src = \
 	filelock-mgr.c \
 	set-perm.c \
 	change-set.c \
-	$(ws_src)
+	$(ws_src) \
+	seafile_service_main.c \
+	$(GEN_C_GLIB_FILES_SRCS)
 
 
-seaf_daemon_SOURCES = seaf-daemon.c $(common_src)
+seaf_daemon_SOURCES = seaf-daemon.c $(common_src) seafile_service.c
 
 seaf_daemon_LDADD = $(top_builddir)/lib/libseafile_common.la \
 	@GLIB2_LIBS@  @GOBJECT_LIBS@ @SSL_LIBS@ @GNUTLS_LIBS@ @NETTLE_LIBS@ \
@@ -98,6 +109,6 @@ seaf_daemon_LDADD = $(top_builddir)/lib/libseafile_common.la \
 	$(top_builddir)/common/cdc/libcdc.la \
 	$(top_builddir)/common/index/libindex.la @LIB_WS32@ @LIB_CRYPT32@ \
 	@SEARPC_LIBS@ @JANSSON_LIBS@ @LIB_MAC@ @ZLIB_LIBS@ @CURL_LIBS@ @BPWRAPPER_LIBS@ \
-	@WS_LIBS@
+	@WS_LIBS@ @THRIFT_LIBS@ @THRIFT_C_GLIB_LIBS@
 
 seaf_daemon_LDFLAGS = @CONSOLE@

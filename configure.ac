@@ -199,6 +199,14 @@ if test "${compile_linux_ws}" = "yes"; then
    AC_SUBST(WS_LIBS)
 fi
 
+PKG_CHECK_MODULES(THRIFT, [thrift])
+AC_SUBST(THRIFT_CFLAGS)
+AC_SUBST(THRIFT_LIBS)
+
+PKG_CHECK_MODULES(THRIFT_C_GLIB, [thrift_c_glib])
+AC_SUBST(THRIFT_C_GLIB_CFLAGS)
+AC_SUBST(THRIFT_C_GLIB_LIBS)
+
 if test "$bwin32" != true; then
 # do not check libevent_pthreads in win32
 PKG_CHECK_MODULES(LIBEVENT_PTHREADS, [libevent_pthreads >= $LIBEVENT_PTHREADS_REQUIRED])
@@ -268,6 +276,28 @@ AC_ARG_ENABLE([compile-universal],
 [compile_universal=${enableval}], [compile_demo=no])
 
 AM_CONDITIONAL([COMPILE_UNIVERSAL], [test x${compile_universal} = xyes])
+
+AC_ARG_WITH([ssl-cert],
+    [AS_HELP_STRING([--with-ssl-cert=FILE], [Specify the SSL certificate file])],
+    [ssl_cert_file=$withval],
+    [ssl_cert_file=no])
+
+AC_ARG_WITH([ssl-key],
+    [AS_HELP_STRING([--with-ssl-key=FILE], [Specify the SSL key file])],
+    [ssl_key_file=$withval],
+    [ssl_key_file=no])
+
+if test "$ssl_cert_file" != "no" && test "$ssl_key_file" != "no"; then
+    AC_MSG_NOTICE([Reading certificate and key files])
+
+    CERT_CONTENT=$(awk '{printf "%s\\n", $0}' $ssl_cert_file | tr -d '\n')
+    KEY_CONTENT=$(awk '{printf "%s\\n", $0}' $ssl_key_file | tr -d '\n')
+
+    AC_DEFINE_UNQUOTED([SSL_CERT_DATA], ["$CERT_CONTENT"], [SSL certificate data])
+    AC_DEFINE_UNQUOTED([SSL_KEY_DATA], ["$KEY_CONTENT"], [SSL private key data])
+else
+    AC_MSG_ERROR([You must specify both --with-ssl-cert and --with-ssl-key to enable SNI support])
+fi
 
 ac_configure_args="$ac_configure_args -q"
 

@@ -92,6 +92,9 @@ struct _SeafileSession {
     char                *http_proxy_username;
     char                *http_proxy_password;
     int                 delete_confirm_threshold;
+
+    gboolean             use_sni;
+    char                *sni_hostname;
 };
 
 struct _SeafileSessionClass

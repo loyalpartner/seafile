@@ -440,6 +440,9 @@ seafile_session_prepare (SeafileSession *session)
     
     session->hide_windows_incompatible_path_notification =
         seafile_session_config_get_bool (session, KEY_HIDE_WINDOWS_INCOMPATIBLE_PATH_NOTIFICATION);
+
+    session->use_sni = seafile_session_config_get_bool (session, KEY_ENABLE_SNI);
+    session->sni_hostname = seafile_session_config_get_string (session, KEY_SNI_HOSTNAME);
     
     /* Start mq manager earlier, so that we can send notifications
      * when start repo manager. */

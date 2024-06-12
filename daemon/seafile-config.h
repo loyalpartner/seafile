@@ -28,6 +28,10 @@
 #define KEY_ENABLE_HTTP_SYNC "enable_http_sync"
 #define KEY_DISABLE_VERIFY_CERTIFICATE "disable_verify_certificate"
 
+/* SNI settings. */
+#define KEY_ENABLE_SNI "enable_sni"
+#define KEY_SNI_HOSTNAME "sni_hostname"
+
 /* Http sync proxy settings. */
 #define KEY_USE_PROXY "use_proxy"
 #define KEY_PROXY_TYPE "proxy_type"

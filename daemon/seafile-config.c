@@ -149,6 +149,17 @@ seafile_session_config_set_string (SeafileSession *session,
             session->hide_windows_incompatible_path_notification = FALSE;
     }
 
+    if (g_strcmp0(key, KEY_ENABLE_SNI) == 0) {
+        if (g_strcmp0(value, "true") == 0)
+            session->use_sni = TRUE;
+        else
+            session->use_sni = FALSE;
+    }
+
+    if (g_strcmp0(key, KEY_SNI_HOSTNAME) == 0) {
+        session->sni_hostname = g_strdup(value);
+    }
+
     return 0;
 }
 

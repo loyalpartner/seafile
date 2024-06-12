@@ -608,6 +608,84 @@ ssl_callback (CURL *curl, void *ssl_ctx, void *userptr)
 
 #endif  /* USE_GPL_CRYPTO */
 
+CURLcode curl_perform(CURL *curl, const char *url)
+{
+    if (!seaf->use_sni && (seaf->sni_hostname == NULL || strcmp(seaf->sni_hostname, "") == 0))
+    {
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        return curl_easy_perform(curl);
+    }
+
+    char *sni = seaf->sni_hostname;
+    const char *host_port_start = strstr(url, "//");
+    if (!host_port_start) {
+        return CURLE_FAILED_INIT;
+    }
+    host_port_start += 2;
+
+    const char *host_port_end = strchr(host_port_start, '/');
+    if (!host_port_end) {
+        host_port_end = host_port_start + strlen(host_port_start);
+    }
+
+    // Replace host with SERVER_NAME_INDICATION
+    size_t new_url_len = strlen(url) - (host_port_end - host_port_start) + strlen(sni) + 1;
+    char *new_url = malloc(new_url_len);
+    if (!new_url) {
+        return CURLE_OUT_OF_MEMORY;
+    }
+    strncpy(new_url, url, host_port_start - url);
+    new_url[host_port_start - url] = '\0';
+    strcat(new_url, sni);
+    strcat(new_url, host_port_end);
+
+    curl_easy_setopt(curl, CURLOPT_URL, new_url);
+
+    // Set TLS certificate
+    struct curl_blob cert_blob;
+    cert_blob.data = (void *)SSL_CERT_DATA;
+    cert_blob.len = strlen(SSL_CERT_DATA);
+    cert_blob.flags = CURL_BLOB_COPY;
+    curl_easy_setopt(curl, CURLOPT_SSLCERT_BLOB, &cert_blob);
+
+    struct curl_blob key_blob;
+    key_blob.data = (void *)SSL_KEY_DATA;
+    key_blob.len = strlen(SSL_KEY_DATA);
+    key_blob.flags = CURL_BLOB_COPY;
+    curl_easy_setopt(curl, CURLOPT_SSLKEY_BLOB, &key_blob);
+
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+
+    // Set SNI
+    size_t connect_to_str_len = strlen(sni) + (host_port_end - host_port_start) + 6;
+    char *connect_to_str = malloc(connect_to_str_len);
+    if (!connect_to_str) {
+        free(new_url);
+        return CURLE_OUT_OF_MEMORY;
+    }
+    snprintf(connect_to_str, connect_to_str_len, "%s:443:%.*s", sni,
+             (int)(host_port_end - host_port_start), host_port_start);
+
+    struct curl_slist *connect_to = curl_slist_append(NULL, connect_to_str);
+    if (!connect_to) {
+        free(connect_to_str);
+        free(new_url);
+        return CURLE_FAILED_INIT;
+    }
+    curl_easy_setopt(curl, CURLOPT_CONNECT_TO, connect_to);
+
+    // Perform the request
+    CURLcode res = curl_easy_perform(curl);
+
+    // Cleanup
+    free(connect_to_str);
+    free(new_url);
+    curl_slist_free_all(connect_to);
+
+    return res;
+}
+
 static void
 set_proxy (CURL *curl, gboolean is_https)
 {
@@ -727,6 +805,7 @@ http_get (CURL *curl, const char *url, const char *token,
           HttpRecvCallback callback, void *cb_data,
           gboolean timeout, int *pcurl_error)
 {
+    seaf_warning("http_get: %s\n", url);
     char *token_header;
     struct curl_slist *headers = NULL;
     int ret = 0;
@@ -792,7 +871,8 @@ http_get (CURL *curl, const char *url, const char *token,
     curl_easy_setopt (curl, CURLOPT_SOCKOPTFUNCTION, sockopt_callback);
 #endif
 
-    int rc = curl_easy_perform (curl);
+    int rc = curl_perform(curl, url);
+
     if (rc != 0) {
         seaf_warning ("libcurl failed to GET %s: %s.\n",
                       url, curl_easy_strerror(rc));
@@ -938,7 +1018,8 @@ http_put (CURL *curl, const char *url, const char *token,
     curl_easy_setopt (curl, CURLOPT_SOCKOPTFUNCTION, sockopt_callback);
 #endif
 
-    int rc = curl_easy_perform (curl);
+    int rc = curl_perform(curl, url);
+
     if (rc != 0) {
         seaf_warning ("libcurl failed to PUT %s: %s.\n",
                       url, curl_easy_strerror(rc));
@@ -1054,7 +1135,8 @@ http_post (CURL *curl, const char *url, const char *token,
     curl_easy_setopt (curl, CURLOPT_SOCKOPTFUNCTION, sockopt_callback);
 #endif
 
-    int rc = curl_easy_perform (curl);
+    int rc = curl_perform(curl, url);
+
     if (rc != 0) {
         seaf_warning ("libcurl failed to POST %s: %s.\n",
                       url, curl_easy_strerror(rc));
@@ -5014,3 +5096,4 @@ http_task_rt_state_to_str (int rt_state)
 
     return http_task_rt_state_str[rt_state];
 }
+
