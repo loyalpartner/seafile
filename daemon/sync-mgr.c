@@ -911,8 +911,13 @@ update_sync_status_v2 (SyncTask *task)
                                                task);
             } else
                 transition_sync_state (task, SYNC_STATE_DONE);
-        } else
-            start_fetch_if_necessary (task, task->info->head_commit);
+        } else {
+          if (seaf->upload_only) {
+              transition_sync_state (task, SYNC_STATE_DONE);
+          } else {
+              start_fetch_if_necessary (task, task->info->head_commit);
+          }
+        }
     }
 
     seaf_branch_unref (local);

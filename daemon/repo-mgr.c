@@ -5272,6 +5272,10 @@ download_files_http (const char *repo_id,
     for (ptr = results; ptr != NULL; ptr = ptr->next) {
         de = ptr->data;
 
+        if (seaf->upload_only) {
+          continue;
+        }
+
         if (de->status == DIFF_STATUS_DIR_ADDED) {
             handle_dir_added_de (repo_id, http_task->repo_name, worktree, istate, de, no_case_conflict_hash);
         } else if (de->status == DIFF_STATUS_ADDED ||

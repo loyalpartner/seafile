@@ -95,6 +95,8 @@ struct _SeafileSession {
 
     gboolean             use_sni;
     char                *sni_hostname;
+
+    gboolean             upload_only;
 };
 
 struct _SeafileSessionClass

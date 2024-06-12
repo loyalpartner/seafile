@@ -31,6 +31,7 @@
 /* SNI settings. */
 #define KEY_ENABLE_SNI "enable_sni"
 #define KEY_SNI_HOSTNAME "sni_hostname"
+#define KEY_UPLOAD_ONLY "upload_only"
 
 /* Http sync proxy settings. */
 #define KEY_USE_PROXY "use_proxy"

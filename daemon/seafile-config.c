@@ -160,6 +160,13 @@ seafile_session_config_set_string (SeafileSession *session,
         session->sni_hostname = g_strdup(value);
     }
 
+    if (g_strcmp0(key, KEY_UPLOAD_ONLY) == 0) {
+        if (g_strcmp0(value, "true") == 0)
+            session->upload_only = TRUE;
+        else
+            session->upload_only = FALSE;
+    }
+
     return 0;
 }
 
