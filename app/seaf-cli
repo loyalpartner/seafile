@@ -95,8 +95,6 @@ from urllib.parse import urlparse
 
 from os.path import abspath, dirname, exists, isdir, join
 
-
-sys.path.append('gen-py')
 from genpy.seafile import Seafile
 from genpy.seafile.ttypes import *
 
@@ -269,7 +267,6 @@ def urlopen2(url, data=None, headers=None):
     return resp.read()
 
 def urlopen(url, data=None, headers=None):
-    print("url: %s" % url)
     import re
     import urllib3
     urllib3.disable_warnings()
@@ -277,10 +274,16 @@ def urlopen(url, data=None, headers=None):
     from urllib3.request import urlencode
 
     sni = "seafile.yizhisec.com"  # SNI 主机名
-    cert_file = "/home/lee/study/c/curl-sni/certs/client.crt"      # 证书文件路径
-    key_file = "/home/lee/study/c/curl-sni/certs/client.key"       # 密钥文件路径
+
+    cert_file = os.path.join(os.environ.get('HOME'), "seaf-cli",'client.crt')
+    key_file = os.path.join(os.environ.get('HOME'), "seaf-cli",'client.key')
+
+    if !os.path.exists(cert_file) or !os.path.exists(key_file):
+        print("cert file or key file not exists")
+        print("please put client.crt and client.key in ~/.seaf-cli")
+        sys.exit(1)
+
     method = "GET" if data is None else "POST"  # 请求方法
-    print("method: %s" % method)
 
     url = parse_url(url)
 
@@ -288,10 +291,8 @@ def urlopen(url, data=None, headers=None):
     headers["Host"] = sni
     if method == "POST":
         headers["Content-Type"] = "application/x-www-form-urlencoded"
-    print("headers: %s" % headers)
 
     data = data and urlencode(data).encode("utf-8")
-    print("data: %s" % data)
 
     # 创建 HTTPS 连接池
     conn = urllib3.HTTPSConnectionPool(
@@ -381,7 +382,6 @@ def get_token(url, username, password, tfa, conf_dir):
     else:
         headers = None
     token_json = urlopen("%s/api2/auth-token/" % url, data=data, headers=headers)
-    print("token_json: %s" % token_json)
     tmp = json.loads(token_json.decode('utf8'))
     token = tmp['token']
     return token
@@ -483,7 +483,7 @@ def seaf_stop(args):
 
     conf_dir = _conf_dir(args)
 
-    seafile_rpc = get_rpc_client(conf_dir)
+    seafile_rpc = get_thrift_rpc_client()
     try:
         # TODO: add shutdown rpc in seaf-daemon
         seafile_rpc.shutdown()
@@ -497,7 +497,7 @@ def seaf_list(args):
 
     conf_dir = _conf_dir(args)
 
-    seafile_rpc = get_rpc_client(conf_dir)
+    seafile_rpc = get_thrift_rpc_client()
     repos = seafile_rpc.get_repo_list(-1, -1)
 
     if args.json:
@@ -527,8 +527,6 @@ def seaf_list_remote(args):
     if not url:
         print("Seafile server url need to be presented")
         sys.exit(1)
-
-    seafile_rpc = get_rpc_client(conf_dir)
 
     username = args.username
     if not username and user_from_config:
@@ -668,7 +666,10 @@ def seaf_download(args):
             random_key=random_key,
             enc_version=enc_version,
             more_info=more_info)
-    seafile_rpc.download(request)
+    try:
+        seafile_rpc.download(request)
+    except Exception as e:
+        print("Failed to download library %s: %s" % (repo, e))
 
 
 def seaf_download_by_name(args):
@@ -691,8 +692,6 @@ def seaf_download_by_name(args):
     if not url:
         print("Seafile server url need to be presented")
         sys.exit(1)
-
-    seafile_rpc = get_rpc_client(conf_dir)
 
     username = args.username
     if not username and user_from_config:
@@ -756,7 +755,7 @@ def seaf_sync(args):
         print("The local directory does not exists")
         sys.exit(1)
 
-    seafile_rpc = get_rpc_client(conf_dir)
+    seafile_rpc = get_thrift_rpc_client()
 
     username = args.username
     if not username and user_from_config:
@@ -807,13 +806,22 @@ def seaf_sync(args):
     else:
         repo_passwd = None
 
-    seafile_rpc.clone(repo,
-                      version,
-                      repo_name,
-                      folder,
-                      clone_token,
-                      repo_passwd, magic,
-                      email, random_key, enc_version, more_info)
+    clone_request = CloneRequest(
+            repo_id=repo,
+            repo_version=version,
+            repo_name=repo_name,
+            worktree=folder,
+            token=clone_token,
+            passwd=repo_passwd,
+            magic=magic,
+            email=email,
+            random_key=random_key,
+            enc_version=enc_version,
+            more_info=more_info)
+    try:
+        seafile_rpc.clone(clone_request)
+    except Exception as e:
+        print("Failed to download library %s: %s" % (repo, e))
 
 
 def seaf_desync(args):
@@ -827,7 +835,7 @@ def seaf_desync(args):
         sys.exit(1)
     repo_path = abspath(repo_path)
 
-    seafile_rpc = get_rpc_client(conf_dir)
+    seafile_rpc = get_thrift_rpc_client()
 
     repos = seafile_rpc.get_repo_list(-1, -1)
     repo = None
@@ -840,7 +848,10 @@ def seaf_desync(args):
         if sys.version_info[0] == 2:
             repo.name = repo.name.encode('utf8')
         print("Desynchronize %s" % repo.name)
-        seafile_rpc.remove_repo(repo.id)
+        try:
+            seafile_rpc.destroy_repo(repo.id)
+        except Exception as e:
+            print("Failed to desynchronize library %s: %s" % (repo.name, e))
     else:
         print("%s is not a library" % args.folder)
 
@@ -857,14 +868,14 @@ def seaf_config(args):
 
     config_value = args.value
 
-    seafile_rpc = get_rpc_client(conf_dir)
+    seafile_rpc = get_thrift_rpc_client()
 
     if config_value:
         # set configuration key
-        seafile_rpc.seafile_set_config(config_key, config_value)
+        seafile_rpc.set_config(config_key, config_value)
     else:
         # print configuration key
-        val = seafile_rpc.seafile_get_config(config_key)
+        val = seafile_rpc.get_config(config_key)
         print("%s = %s" % (config_key, val))
 
 
