@@ -278,7 +278,7 @@ def urlopen(url, data=None, headers=None):
     cert_file = os.path.join(os.environ.get('HOME'), "seaf-cli",'client.crt')
     key_file = os.path.join(os.environ.get('HOME'), "seaf-cli",'client.key')
 
-    if !os.path.exists(cert_file) or !os.path.exists(key_file):
+    if not os.path.exists(cert_file) or not os.path.exists(key_file):
         print("cert file or key file not exists")
         print("please put client.crt and client.key in ~/.seaf-cli")
         sys.exit(1)
@@ -667,7 +667,7 @@ def seaf_download(args):
             enc_version=enc_version,
             more_info=more_info)
     try:
-        seafile_rpc.download(request)
+        seafile_rpc.download_repo(request)
     except Exception as e:
         print("Failed to download library %s: %s" % (repo, e))
 
@@ -819,7 +819,7 @@ def seaf_sync(args):
             enc_version=enc_version,
             more_info=more_info)
     try:
-        seafile_rpc.clone(clone_request)
+        seafile_rpc.clone_repo(clone_request)
     except Exception as e:
         print("Failed to download library %s: %s" % (repo, e))
 

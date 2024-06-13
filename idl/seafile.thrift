@@ -72,8 +72,8 @@ service Seafile {
 
   i32 set_config(1: string key, 2: string value),
   string get_config(1: string key),
-  string download(1: DownloadRequest request),
-  string clone(1: CloneRequest request),
+  string download_repo(1: DownloadRequest request),
+  string clone_repo(1: CloneRequest request),
   Repo get_repo(1: string repo_id),
   void destroy_repo(1: string repo_id),
   void shutdown(),

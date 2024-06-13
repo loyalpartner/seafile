@@ -49,7 +49,7 @@ gboolean seafile_service_get_config (SeafileIf *iface,
 }
 
 static gboolean 
-seafile_service_handler_download (SeafileIf *iface,
+seafile_service_handler_download_repo (SeafileIf *iface,
                                   gchar **_return,
                                   const DownloadRequest *request,
                                   GError **error)
@@ -72,7 +72,7 @@ seafile_service_handler_download (SeafileIf *iface,
 }
 
 static gboolean
-seafile_service_handler_clone(SeafileIf *iface,
+seafile_service_handler_clone_repo(SeafileIf *iface,
                               gchar **_return,
                               const CloneRequest *request,
                               GError **error)
@@ -211,10 +211,10 @@ seafile_service_handler_class_init (SeafileServiceHandlerClass *klass)
     seafile_service_set_config;
   seafile_handler_class->get_config =
     seafile_service_get_config;
-  seafile_handler_class->clone =
-    seafile_service_handler_clone;
-  seafile_handler_class->download =
-    seafile_service_handler_download;
+  seafile_handler_class->clone_repo =
+    seafile_service_handler_clone_repo;
+  seafile_handler_class->download_repo =
+    seafile_service_handler_download_repo;
   seafile_handler_class->get_repo =
     seafile_service_handler_get_repo;
   seafile_handler_class->destroy_repo =
