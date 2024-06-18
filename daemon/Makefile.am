@@ -4,6 +4,8 @@ GEN_C_GLIB_FILES_SRCS = gen-c_glib/seafile_types.c gen-c_glib/seafile.c
 $(GEN_C_GLIB_FILES_HDRS) $(GEN_C_GLIB_FILES_SRCS): $(top_srcdir)/idl/seafile.thrift
 	thrift --gen c_glib -r $<
 
+BUILT_SOURCES = $(GEN_C_GLIB_FILES_HDRS)
+
 AM_CFLAGS = -DPKGDATADIR=\"$(pkgdatadir)\" \
 	-DPACKAGE_DATA_DIR=\""$(pkgdatadir)"\" \
 	-DSEAFILE_CLIENT \
@@ -112,3 +114,6 @@ seaf_daemon_LDADD = $(top_builddir)/lib/libseafile_common.la \
 	@WS_LIBS@ @THRIFT_LIBS@ @THRIFT_C_GLIB_LIBS@
 
 seaf_daemon_LDFLAGS = @CONSOLE@
+
+clean-local:
+	$(RM) gen-c_glib/*
