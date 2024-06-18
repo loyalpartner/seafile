@@ -97,25 +97,17 @@ seafile_service_handler_clone_repo(SeafileIf *iface,
 static void
 convert_repo (GObject *repo, Repo *r)
 {
-  g_object_get (repo, "id", &r->id, "name", &r->name,
-      "desc", &r->desc, "encrypted", &r->encrypted,
-      "magic", &r->magic, "enc_version", &r->enc_version,
-      "head_cmmt_id", &r->head_cmmt_id,
-      "root", &r->root,
-      "version", &r->version, "last_modify", &r->last_modify,
-      NULL);
-
-  g_object_get (repo,
-      "repo_id", &r->id, "repo_name", &r->name,
-      "repo_desc", &r->desc, "last_modified", &r->last_modify,
-      NULL);
-
-  g_object_get (repo, "worktree", &r->worktree,
-      "relay-id", &r->relay_id,
-      "worktree-invalid", &r->worktree_invalid,
-      "last-sync-time", &r->last_sync_time,
-      "auto-sync", &r->auto_sync,
-      NULL);
+    g_object_get (repo, 
+                  "id", &r->id, "name", &r->name,
+                  "desc", &r->desc,
+                  "encrypted", &r->encrypted,
+                  "worktree", &r->worktree,
+                  "auto-sync", &r->auto_sync,
+                  "last-sync-time", &r->last_sync_time,
+                  "worktree-invalid", &r->worktree_invalid,
+                  "relay-id", &r->relay_id,
+                  "version", &r->version,
+                  NULL);
 }
 
 
