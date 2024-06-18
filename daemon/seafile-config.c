@@ -39,6 +39,13 @@ config_get_string (sqlite3 *config_db, const char *key)
                                      get_value, &value) < 0)
         return NULL;
 
+
+    if (value == NULL){
+        if (g_strcmp0(key, KEY_UPLOAD_ONLY) == 0) {
+            return g_strdup("true");
+        }
+    }
+
     return value;
 }
 
