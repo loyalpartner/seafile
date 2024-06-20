@@ -27,12 +27,11 @@ seafile_service_handler_ping (SeafileIf *iface,
 
 gboolean 
 seafile_service_set_config (SeafileIf *iface,
-                            gint32* _return,
                             const gchar * key,
                             const gchar * value,
                             GError **error)
 {
-  *_return = seafile_set_config(key, value, error);
+  seafile_set_config(key, value, error);
 
   return handle_error(error);
 }
@@ -44,6 +43,29 @@ gboolean seafile_service_get_config (SeafileIf *iface,
     GError **error)
 {
   *_return = seafile_get_config(key, error);
+
+  return handle_error(error);
+}
+
+
+gboolean seafile_service_set_repo_property (SeafileIf *iface,
+                                          const gchar * repo_id,
+                                          const gchar * key,
+                                          const gchar * value,
+                                          GError **error)
+{
+  seafile_set_repo_property(repo_id, key, value, error);
+
+  return handle_error(error);
+}
+
+gboolean seafile_service_get_repo_property (SeafileIf *iface,
+                                          gchar ** _return,
+                                          const gchar * repo_id,
+                                          const gchar * key,
+                                          GError **error)
+{
+  *_return = seafile_get_repo_property(repo_id, key, error);
 
   return handle_error(error);
 }
@@ -203,6 +225,10 @@ seafile_service_handler_class_init (SeafileServiceHandlerClass *klass)
     seafile_service_set_config;
   seafile_handler_class->get_config =
     seafile_service_get_config;
+  seafile_handler_class->set_repo_property =
+    seafile_service_set_repo_property;
+  seafile_handler_class->get_repo_property =
+    seafile_service_get_repo_property;
   seafile_handler_class->clone_repo =
     seafile_service_handler_clone_repo;
   seafile_handler_class->download_repo =

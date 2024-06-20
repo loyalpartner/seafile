@@ -44,8 +44,10 @@ struct Repo {
 service Seafile {
   void ping(),
 
-  i32 set_config(1: string key, 2: string value),
+  void set_config(1: string key, 2: string value),
   string get_config(1: string key),
+  void set_repo_property(1: string repo_id, 2: string key, 3: string value),
+  string get_repo_property(1: string repo_id, 2: string key),
   string download_repo(1: DownloadRequest request),
   string clone_repo(1: CloneRequest request),
   Repo get_repo(1: string repo_id),
