@@ -10,6 +10,7 @@
 #include <thrift/c_glib/transport/thrift_server_socket.h>
 #include <thrift/c_glib/transport/thrift_server_transport.h>
 
+#include "seafile-session.h"
 #include "seafile_service.h"
 #include "seafile_service_main.h"
 
@@ -48,8 +49,6 @@ start_thrift_server (void *args)
   ThriftTransportFactory *transport_factory;
   ThriftProtocolFactory *protocol_factory;
 
-  struct sigaction sigint_action;
-
   GError *error = NULL;
 
 #if (!GLIB_CHECK_VERSION (2, 36, 0))
@@ -74,7 +73,7 @@ start_thrift_server (void *args)
      listens for client connections */
   server_transport =
     g_object_new (THRIFT_TYPE_SERVER_SOCKET,
-                  "port", 9090,
+                  "port", seaf->port,
                   NULL);
 
   /* Create our transport factory, used by the server to wrap "raw"
@@ -101,26 +100,11 @@ start_thrift_server (void *args)
                   "output_protocol_factory",  protocol_factory,
                   NULL);
 
-  /* Install our SIGINT handler, which handles Ctrl-C being pressed by
-     stopping the server gracefully (not strictly necessary, but a
-     nice touch) */
-  memset (&sigint_action, 0, sizeof (sigint_action));
-  sigint_action.sa_handler = sigint_handler;
-  sigint_action.sa_flags = SA_RESETHAND;
-  sigaction (SIGINT, &sigint_action, NULL);
-
   /* Start the server, which will run until its stop method is invoked
      (from within the SIGINT handler, in this case) */
   puts ("Starting the server...");
   thrift_server_serve (server, &error);
 
-  /* If the server stopped for any reason other than having been
-     interrupted by the user, report the error */
-  if (!sigint_received) {
-    g_message ("thrift_server_serve: %s",
-               error != NULL ? error->message : "(null)");
-    g_clear_error (&error);
-  }
 
   puts ("done.");
 
@@ -132,5 +116,6 @@ start_thrift_server (void *args)
   g_object_unref (processor);
   g_object_unref (handler);
 
+  exit (0);
   return NULL;
 }

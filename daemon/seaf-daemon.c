@@ -54,7 +54,7 @@
 
 SeafileSession *seaf;
 
-static const char *short_options = "hvc:d:w:l:D:bg:G:";
+static const char *short_options = "hvc:d:w:l:D:bg:G:p:";
 static struct option long_options[] = {
     { "help", no_argument, NULL, 'h', },
     { "version", no_argument, NULL, 'v', },
@@ -66,12 +66,13 @@ static struct option long_options[] = {
     { "log", required_argument, NULL, 'l' },
     { "ccnet-debug-level", required_argument, NULL, 'g' },
     { "seafile-debug-level", required_argument, NULL, 'G' },
+    { "port", required_argument, NULL, 'p' },
     { NULL, 0, NULL, 0, },
 };
 
 static void usage ()
 {
-    fprintf (stderr, "usage: seaf-daemon [-c config_dir] [-d seafile_dir] [-w worktree_dir] [--daemon]\n");
+    fprintf (stderr, "usage: seaf-daemon [-c config_dir] [-d seafile_dir] [-w worktree_dir] [-p port] [--daemon]\n");
 }
 
 #include <searpc.h>
@@ -424,6 +425,7 @@ main (int argc, char **argv)
     int daemon_mode = 0;
     char *ccnet_debug_level_str = "info";
     char *seafile_debug_level_str = "debug";
+    int port = 9090;
 
 #ifdef WIN32
     LoadLibraryA ("exchndl.dll");
@@ -465,6 +467,9 @@ main (int argc, char **argv)
             break;
         case 'G':
             seafile_debug_level_str = optarg;
+            break;
+        case 'p':
+            port = atoi(optarg);
             break;
         default:
             usage ();
@@ -546,7 +551,7 @@ main (int argc, char **argv)
         seaf_warning ("Failed to create seafile session.\n");
         exit (1);
     }
-
+    seaf->port = port;
 
     pidfile = g_build_filename (seafile_dir, "seaf-daemon.pid", NULL);
 #ifdef __linux__

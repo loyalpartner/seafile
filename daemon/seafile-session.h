@@ -45,6 +45,7 @@ struct _SeafileSession {
     char                *client_id;
     char                *client_name;
 
+    int                 port; /* thrift server port */
     char                *seaf_dir;
     char                *tmp_file_dir;
     char                *worktree_dir; /* the default directory for
