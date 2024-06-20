@@ -590,6 +590,10 @@ main (int argc, char **argv)
 
     seafile_session_config_set_string (seaf, "wktree", seaf->worktree_dir);
 
+#ifdef SNI_DOMAIN
+    seafile_session_config_set_string (seaf, "sni_hostname", SNI_DOMAIN);
+#endif
+
     g_thread_new("thrift-server", start_thrift_server, NULL);
 
     event_base_loop (seaf->ev_base, 0);

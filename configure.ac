@@ -287,17 +287,27 @@ AC_ARG_WITH([ssl-key],
     [ssl_key_file=$withval],
     [ssl_key_file=no])
 
-if test "$ssl_cert_file" != "no" && test "$ssl_key_file" != "no"; then
-    AC_MSG_NOTICE([Reading certificate and key files])
+AC_ARG_WITH([sni],
+    [AS_HELP_STRING([--with-sni=SNI], [Specify the SNI domain])],
+    [sni=$withval],
+    [sni=no])
 
-    CERT_CONTENT=$(awk '{printf "%s\\n", $0}' $ssl_cert_file | tr -d '\n')
-    KEY_CONTENT=$(awk '{printf "%s\\n", $0}' $ssl_key_file | tr -d '\n')
+if test "$sni" != "no"; then
+    AC_DEFINE_UNQUOTED([SNI_DOMAIN], ["$sni"], [SNI domain])
 
-    AC_DEFINE_UNQUOTED([SSL_CERT_DATA], ["$CERT_CONTENT"], [SSL certificate data])
-    AC_DEFINE_UNQUOTED([SSL_KEY_DATA], ["$KEY_CONTENT"], [SSL private key data])
-else
-    AC_MSG_ERROR([You must specify both --with-ssl-cert and --with-ssl-key to enable SNI support])
+    if test "$ssl_cert_file" != "no" && test "$ssl_key_file" != "no"; then
+        AC_MSG_NOTICE([Reading certificate and key files])
+
+        CERT_CONTENT=$(awk '{printf "%s\\n", $0}' $ssl_cert_file | tr -d '\n')
+        KEY_CONTENT=$(awk '{printf "%s\\n", $0}' $ssl_key_file | tr -d '\n')
+
+        AC_DEFINE_UNQUOTED([SSL_CERT_DATA], ["$CERT_CONTENT"], [SSL certificate data])
+        AC_DEFINE_UNQUOTED([SSL_KEY_DATA], ["$KEY_CONTENT"], [SSL private key data])
+    else
+        AC_MSG_ERROR([You must specify both --with-ssl-cert and --with-ssl-key to enable SNI support])
+    fi
 fi
+
 
 ac_configure_args="$ac_configure_args -q"
 

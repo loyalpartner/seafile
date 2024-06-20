@@ -17,13 +17,14 @@ struct CloneRequest {
   1: string repo_id,
   2: i32 repo_version,
   3: string repo_name,
-  4: string worktree,
+  4: string worktree, // 待同步的目录
   5: string token,
   6: string passwd,
   7: string magic,
   8: string email,
   9: string random_key,
   10: i32 enc_version,
+  // #"{"server_url": "", "is_readonly": 0}"
   11: string more_info,
 }
 
