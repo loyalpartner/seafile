@@ -68,7 +68,9 @@ lib/crypt.c
 lib/copy-task.c
 app/seafile
 app/seafserv-tool
+app/genpy
 daemon/seaf-daemon
+daemon/gen-c_glib
 gui/gtk/seafile-applet
 server/seaf-server
 server/gc/seafserv-gc

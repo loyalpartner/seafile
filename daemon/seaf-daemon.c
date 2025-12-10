@@ -54,7 +54,7 @@
 
 SeafileSession *seaf;
 
-static const char *short_options = "hvc:d:w:l:D:bg:G:p:";
+static const char *short_options = "hvc:d:w:l:D:bg:G:p:a:";
 static struct option long_options[] = {
     { "help", no_argument, NULL, 'h', },
     { "version", no_argument, NULL, 'v', },
@@ -67,12 +67,13 @@ static struct option long_options[] = {
     { "ccnet-debug-level", required_argument, NULL, 'g' },
     { "seafile-debug-level", required_argument, NULL, 'G' },
     { "port", required_argument, NULL, 'p' },
+    { "addr", required_argument, NULL, 'a' },
     { NULL, 0, NULL, 0, },
 };
 
 static void usage ()
 {
-    fprintf (stderr, "usage: seaf-daemon [-c config_dir] [-d seafile_dir] [-w worktree_dir] [-p port] [--daemon]\n");
+    fprintf (stderr, "usage: seaf-daemon [-c config_dir] [-d seafile_dir] [-w worktree_dir] [-p port] [-a addr] [--daemon]\n");
 }
 
 #include <searpc.h>
@@ -307,22 +308,31 @@ char *b64encode(const char *input)
 #endif
 
 static int
-start_searpc_server ()
+start_searpc_server (const char *rpc_addr)
 {
     register_rpc_service ();
 
 #ifdef WIN32
-    char userNameBuf[32767];
-    DWORD bufCharCount = sizeof(userNameBuf);
-    if (GetUserNameA(userNameBuf, &bufCharCount) == 0) {
-        seaf_warning ("Failed to get user name, GLE=%lu, required size is %lu\n",
-                      GetLastError(), bufCharCount);
-        return -1;
+    char *path;
+    if (rpc_addr) {
+        path = g_strdup(rpc_addr);
+    } else {
+        char userNameBuf[32767];
+        DWORD bufCharCount = sizeof(userNameBuf);
+        if (GetUserNameA(userNameBuf, &bufCharCount) == 0) {
+            seaf_warning ("Failed to get user name, GLE=%lu, required size is %lu\n",
+                          GetLastError(), bufCharCount);
+            return -1;
+        }
+        path = g_strdup_printf("\\\\.\\pipe\\seafile_%s", b64encode(userNameBuf));
     }
-
-    char *path = g_strdup_printf("\\\\.\\pipe\\seafile_%s", b64encode(userNameBuf));
 #else
-    char *path = g_build_filename (seaf->seaf_dir, SEAFILE_SOCKET_NAME, NULL);
+    char *path;
+    if (rpc_addr) {
+        path = g_strdup(rpc_addr);
+    } else {
+        path = g_build_filename (seaf->seaf_dir, SEAFILE_SOCKET_NAME, NULL);
+    }
 #endif
 
     SearpcNamedPipeServer *server = searpc_create_named_pipe_server (path);
@@ -426,6 +436,7 @@ main (int argc, char **argv)
     char *ccnet_debug_level_str = "info";
     char *seafile_debug_level_str = "debug";
     int port = 9090;
+    char *rpc_addr = NULL;
 
 #ifdef WIN32
     LoadLibraryA ("exchndl.dll");
@@ -470,6 +481,9 @@ main (int argc, char **argv)
             break;
         case 'p':
             port = atoi(optarg);
+            break;
+        case 'a':
+            rpc_addr = g_strdup(optarg);
             break;
         default:
             usage ();
@@ -585,7 +599,7 @@ main (int argc, char **argv)
     seafile_session_prepare (seaf);
     seafile_session_start (seaf);
 
-    if (start_searpc_server () < 0) {
+    if (start_searpc_server (rpc_addr) < 0) {
         seaf_warning ("Failed to start searpc server.\n");
         exit (1);
     }
