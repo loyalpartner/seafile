@@ -610,12 +610,23 @@ ssl_callback (CURL *curl, void *ssl_ctx, void *userptr)
 
 CURLcode curl_perform(CURL *curl, const char *url)
 {
+    // Check if URL is HTTPS first
+    gboolean is_https = (strncasecmp(url, "https://", 8) == 0);
+
+    // For HTTP requests, SNI is not applicable, just use the URL as is
+    if (!is_https) {
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        return curl_easy_perform(curl);
+    }
+
+    // For HTTPS requests, check if SNI is configured
     if (!seaf->use_sni || (seaf->sni_hostname == NULL || strcmp(seaf->sni_hostname, "") == 0))
     {
         curl_easy_setopt(curl, CURLOPT_URL, url);
         return curl_easy_perform(curl);
     }
 
+    // Continue with SNI setup for HTTPS
     char *sni = seaf->sni_hostname;
     const char *host_port_start = strstr(url, "//");
     if (!host_port_start) {
@@ -626,15 +637,6 @@ CURLcode curl_perform(CURL *curl, const char *url)
     const char *host_port_end = strchr(host_port_start, '/');
     if (!host_port_end) {
         host_port_end = host_port_start + strlen(host_port_start);
-    }
-
-    // Check if URL is HTTPS
-    gboolean is_https = (strncasecmp(url, "https://", 8) == 0);
-
-    // For HTTP requests, SNI is not applicable, just use the URL as is
-    if (!is_https) {
-        curl_easy_setopt(curl, CURLOPT_URL, url);
-        return curl_easy_perform(curl);
     }
 
     // For HTTPS requests, continue with SNI setup
