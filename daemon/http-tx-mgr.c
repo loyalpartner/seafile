@@ -610,7 +610,7 @@ ssl_callback (CURL *curl, void *ssl_ctx, void *userptr)
 
 CURLcode curl_perform(CURL *curl, const char *url)
 {
-    if (!seaf->use_sni && (seaf->sni_hostname == NULL || strcmp(seaf->sni_hostname, "") == 0))
+    if (!seaf->use_sni || (seaf->sni_hostname == NULL || strcmp(seaf->sni_hostname, "") == 0))
     {
         curl_easy_setopt(curl, CURLOPT_URL, url);
         return curl_easy_perform(curl);
