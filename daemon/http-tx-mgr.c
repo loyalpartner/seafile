@@ -628,6 +628,16 @@ CURLcode curl_perform(CURL *curl, const char *url)
         host_port_end = host_port_start + strlen(host_port_start);
     }
 
+    // Check if URL is HTTPS
+    gboolean is_https = (strncasecmp(url, "https://", 8) == 0);
+
+    // For HTTP requests, SNI is not applicable, just use the URL as is
+    if (!is_https) {
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        return curl_easy_perform(curl);
+    }
+
+    // For HTTPS requests, continue with SNI setup
     // Replace host with SERVER_NAME_INDICATION
     size_t new_url_len = strlen(url) - (host_port_end - host_port_start) + strlen(sni) + 1;
     char *new_url = malloc(new_url_len);
@@ -641,7 +651,7 @@ CURLcode curl_perform(CURL *curl, const char *url)
 
     curl_easy_setopt(curl, CURLOPT_URL, new_url);
 
-    // Set TLS certificate
+    // Set TLS certificate for HTTPS
     struct curl_blob cert_blob;
     cert_blob.data = (void *)SSL_CERT_DATA;
     cert_blob.len = strlen(SSL_CERT_DATA);
@@ -657,7 +667,7 @@ CURLcode curl_perform(CURL *curl, const char *url)
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
 
-    // Set SNI
+    // Set SNI for HTTPS
     size_t connect_to_str_len = strlen(sni) + (host_port_end - host_port_start) + 6;
     char *connect_to_str = malloc(connect_to_str_len);
     if (!connect_to_str) {
