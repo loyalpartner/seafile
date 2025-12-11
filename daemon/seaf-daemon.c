@@ -436,6 +436,7 @@ main (int argc, char **argv)
     char *ccnet_debug_level_str = "info";
     char *seafile_debug_level_str = "debug";
     int port = 9090;
+    int port_provided = 0;
     char *rpc_addr = NULL;
 
 #ifdef WIN32
@@ -481,6 +482,7 @@ main (int argc, char **argv)
             break;
         case 'p':
             port = atoi(optarg);
+            port_provided = 1;
             break;
         case 'a':
             rpc_addr = g_strdup(optarg);
@@ -613,7 +615,9 @@ main (int argc, char **argv)
     seafile_session_config_set_string (seaf, "sni_hostname", SNI_DOMAIN);
 #endif
 
-    g_thread_new("thrift-server", start_thrift_server, NULL);
+    if (port_provided) {
+        g_thread_new("thrift-server", start_thrift_server, NULL);
+    }
 
     event_base_loop (seaf->ev_base, 0);
 

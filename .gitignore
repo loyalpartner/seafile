@@ -70,6 +70,7 @@ app/seafile
 app/seafserv-tool
 app/genpy
 daemon/seaf-daemon
+daemon/hscloud
 daemon/gen-c_glib
 gui/gtk/seafile-applet
 server/seaf-server

@@ -30,7 +30,7 @@ AM_CFLAGS += -arch x86_64 -arch arm64
 endif
 endif
 
-bin_PROGRAMS = seaf-daemon
+bin_PROGRAMS = hscloud
 
 noinst_HEADERS = \
 	job-mgr.h \
@@ -103,9 +103,9 @@ common_src = \
 	$(GEN_C_GLIB_FILES_SRCS)
 
 
-seaf_daemon_SOURCES = seaf-daemon.c $(common_src) seafile_service.c
+hscloud_SOURCES = seaf-daemon.c $(common_src) seafile_service.c
 
-seaf_daemon_LDADD = $(top_builddir)/lib/libseafile_common.la \
+hscloud_LDADD = $(top_builddir)/lib/libseafile_common.la \
 	@GLIB2_LIBS@  @GOBJECT_LIBS@ @SSL_LIBS@ @GNUTLS_LIBS@ @NETTLE_LIBS@ \
 	@LIB_RT@ @LIB_UUID@ -lsqlite3 @LIBEVENT_LIBS@ @LIBEVENT_PTHREADS_LIBS@\
 	$(top_builddir)/common/cdc/libcdc.la \
@@ -113,7 +113,7 @@ seaf_daemon_LDADD = $(top_builddir)/lib/libseafile_common.la \
 	@SEARPC_LIBS@ @JANSSON_LIBS@ @LIB_MAC@ @ZLIB_LIBS@ @CURL_LIBS@ @BPWRAPPER_LIBS@ \
 	@WS_LIBS@ @THRIFT_LIBS@ @THRIFT_C_GLIB_LIBS@
 
-seaf_daemon_LDFLAGS = @CONSOLE@
+hscloud_LDFLAGS = @CONSOLE@
 
 clean-local:
 	$(RM) gen-c_glib/*
