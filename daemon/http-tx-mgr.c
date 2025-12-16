@@ -620,7 +620,7 @@ CURLcode curl_perform(CURL *curl, const char *url)
     }
 
     // For HTTPS requests, check if SNI is configured
-    if (!seaf->use_sni || (seaf->sni_hostname == NULL || strcmp(seaf->sni_hostname, "") == 0))
+    if ((seaf->sni_hostname == NULL || strcmp(seaf->sni_hostname, "") == 0))
     {
         curl_easy_setopt(curl, CURLOPT_URL, url);
         return curl_easy_perform(curl);
