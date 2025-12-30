@@ -135,3 +135,6 @@ seafile.vcxproj.user
 x64
 msi/custom/seafile_custom.vcxproj.user
 msi/custom/.vs
+
+client.crt
+client.key

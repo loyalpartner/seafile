@@ -560,7 +560,7 @@ main (int argc, char **argv)
     if (seafile_dir == NULL)
         seafile_dir = g_build_filename (config_dir, "seafile-data", NULL);
     if (worktree_dir == NULL)
-        worktree_dir = g_build_filename (g_get_home_dir(), "seafile", NULL);
+        worktree_dir = g_build_filename (g_get_home_dir(), "hscloud", NULL);
 
     seaf = seafile_session_new (seafile_dir, worktree_dir, config_dir);
     if (!seaf) {
